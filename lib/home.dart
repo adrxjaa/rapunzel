@@ -129,8 +129,8 @@ class _MyHomePageState extends State<MyHomePage> {
   // 🔹 COLOR DAYS
   Color? _getDayColor(DateTime day) {
     final type = box.get(_key(day));
-    if (type == "water") return Colors.blue[200];
-    if (type == "shampoo") return Colors.pink[200];
+    if (type == "water") return const Color.fromARGB(255, 158, 163, 255);
+    if (type == "shampoo") return const Color.fromARGB(255, 254, 181, 252);
     return null;
   }
 
