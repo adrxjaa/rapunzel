@@ -157,7 +157,7 @@ class _MyHomePageState extends State<MyHomePage> {
     return count;
   }
 
-  // 🔹 NEXT WASH LOGIC (UPDATED)
+  // 🔹 NEXT WASH LOGIC
   DateTime? _nextWashDay() {
     List<DateTime> shampooDays = [];
 
@@ -243,7 +243,7 @@ class _MyHomePageState extends State<MyHomePage> {
               ),
             ),
 
-            // 🔮 NEXT WASH (CLICKABLE NOW)
+            // 🔮 NEXT WASH (CLICKABLE)
             GestureDetector(
               onTap: _showFrequencyDialog,
               child: Container(
@@ -299,8 +299,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   formatButtonVisible: false,
                   titleCentered: true,
                 ),
-                selectedDayPredicate: (day) =>
-                    isSameDay(_selectedDay, day),
+                selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
                 onDaySelected: (selectedDay, focusedDay) {
                   setState(() {
                     _selectedDay = selectedDay;
@@ -309,9 +308,9 @@ class _MyHomePageState extends State<MyHomePage> {
                   _showWashDialog(selectedDay);
                 },
                 calendarBuilders: CalendarBuilders(
+                  // Handles all normal (non-today, non-selected) days
                   defaultBuilder: (context, day, focusedDay) {
                     final color = _getDayColor(day);
-
                     return Container(
                       margin: const EdgeInsets.all(4),
                       decoration: BoxDecoration(
@@ -320,6 +319,52 @@ class _MyHomePageState extends State<MyHomePage> {
                       ),
                       alignment: Alignment.center,
                       child: Text('${day.day}'),
+                    );
+                  },
+
+                  // Handles TODAY — table_calendar routes today here, not defaultBuilder
+                  todayBuilder: (context, day, focusedDay) {
+                    // If today has a wash logged, show wash color; otherwise pastel orange
+                    final loggedColor = _getDayColor(day);
+                    final color = loggedColor ?? const Color(0xFFFFCC80);
+                    return Container(
+                      margin: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: color,
+                        shape: BoxShape.circle,
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        '${day.day}',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    );
+                  },
+
+                  // Handles whichever day the user taps
+                  selectedBuilder: (context, day, focusedDay) {
+                    final isToday = isSameDay(day, DateTime.now());
+                    final loggedColor = _getDayColor(day);
+                    // If logged, show wash color; if today, show orange; else pastel green
+                    final color = loggedColor ??
+                        (isToday
+                            ? const Color(0xFFFFCC80)
+                            : const Color(0xFFA5D6A7));
+                    return Container(
+                      margin: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: color,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Colors.green.shade300,
+                          width: 1.5,
+                        ),
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        '${day.day}',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
                     );
                   },
                 ),
