@@ -134,10 +134,11 @@ class _MyHomePageState extends State<MyHomePage> {
     return null;
   }
 
-  // 🔹 MONTH COUNT
-  int _monthlyCount() {
+  // 🔹 MONTH COUNT (split by type)
+  Map<String, int> _monthlyCounts() {
     final now = DateTime.now();
-    int count = 0;
+    int water = 0;
+    int shampoo = 0;
 
     for (var key in box.keys) {
       if (key == 'frequency') continue;
@@ -150,11 +151,13 @@ class _MyHomePageState extends State<MyHomePage> {
       );
 
       if (date.month == now.month && date.year == now.year) {
-        count++;
+        final type = box.get(key);
+        if (type == "water") water++;
+        if (type == "shampoo") shampoo++;
       }
     }
 
-    return count;
+    return {"water": water, "shampoo": shampoo};
   }
 
   // 🔹 NEXT WASH LOGIC
@@ -179,13 +182,21 @@ class _MyHomePageState extends State<MyHomePage> {
     shampooDays.sort();
 
     final freq = _getFrequency();
+    final computed = shampooDays.last.add(Duration(days: freq));
 
-    return shampooDays.last.add(Duration(days: freq));
+    // If the computed next wash day has already passed, show today instead
+    final today = DateTime.now();
+    final todayNormalized = DateTime(today.year, today.month, today.day);
+    if (computed.isBefore(todayNormalized)) {
+      return todayNormalized;
+    }
+
+    return computed;
   }
 
   @override
   Widget build(BuildContext context) {
-    final count = _monthlyCount();
+    final counts = _monthlyCounts();
     final next = _nextWashDay();
 
     return Scaffold(
@@ -233,11 +244,69 @@ class _MyHomePageState extends State<MyHomePage> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    "$count Washes",
+                    "${(counts['water']! + counts['shampoo']!)} Washes Total",
                     style: const TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
                     ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      // Water wash chip
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: const Color.fromARGB(255, 158, 163, 255)
+                              .withOpacity(0.3),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.water_drop_outlined,
+                                size: 14,
+                                color: Color.fromARGB(255, 100, 108, 255)),
+                            const SizedBox(width: 4),
+                            Text(
+                              "${counts['water']} Water",
+                              style: const TextStyle(
+                                fontSize: 13,
+                                color: Color.fromARGB(255, 80, 88, 200),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      // Shampoo wash chip
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: const Color.fromARGB(255, 254, 181, 252)
+                              .withOpacity(0.3),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.bubble_chart_outlined,
+                                size: 14,
+                                color: Color.fromARGB(255, 180, 80, 180)),
+                            const SizedBox(width: 4),
+                            Text(
+                              "${counts['shampoo']} Shampoo",
+                              style: const TextStyle(
+                                fontSize: 13,
+                                color: Color.fromARGB(255, 160, 60, 160),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -308,7 +377,6 @@ class _MyHomePageState extends State<MyHomePage> {
                   _showWashDialog(selectedDay);
                 },
                 calendarBuilders: CalendarBuilders(
-                  // Handles all normal (non-today, non-selected) days
                   defaultBuilder: (context, day, focusedDay) {
                     final color = _getDayColor(day);
                     return Container(
@@ -321,10 +389,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       child: Text('${day.day}'),
                     );
                   },
-
-                  // Handles TODAY — table_calendar routes today here, not defaultBuilder
                   todayBuilder: (context, day, focusedDay) {
-                    // If today has a wash logged, show wash color; otherwise pastel orange
                     final loggedColor = _getDayColor(day);
                     final color = loggedColor ?? const Color(0xFFFFCC80);
                     return Container(
@@ -340,12 +405,9 @@ class _MyHomePageState extends State<MyHomePage> {
                       ),
                     );
                   },
-
-                  // Handles whichever day the user taps
                   selectedBuilder: (context, day, focusedDay) {
                     final isToday = isSameDay(day, DateTime.now());
                     final loggedColor = _getDayColor(day);
-                    // If logged, show wash color; if today, show orange; else pastel green
                     final color = loggedColor ??
                         (isToday
                             ? const Color(0xFFFFCC80)
