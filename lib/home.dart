@@ -25,12 +25,10 @@ class _MyHomePageState extends State<MyHomePage> {
 
   String _key(DateTime d) => "${d.year}-${d.month}-${d.day}";
 
-  // 🔹 GET FREQUENCY
   int _getFrequency() {
     return box.get('frequency', defaultValue: 3);
   }
 
-  // 🔹 SET FREQUENCY DIALOG
   void _showFrequencyDialog() {
     int temp = _getFrequency();
 
@@ -46,20 +44,13 @@ class _MyHomePageState extends State<MyHomePage> {
                 children: [
                   IconButton(
                     onPressed: () {
-                      if (temp > 1) {
-                        setStateDialog(() => temp--);
-                      }
+                      if (temp > 1) setStateDialog(() => temp--);
                     },
                     icon: const Icon(Icons.remove),
                   ),
-                  Text(
-                    "$temp days",
-                    style: const TextStyle(fontSize: 18),
-                  ),
+                  Text("$temp days", style: const TextStyle(fontSize: 18)),
                   IconButton(
-                    onPressed: () {
-                      setStateDialog(() => temp++);
-                    },
+                    onPressed: () => setStateDialog(() => temp++),
                     icon: const Icon(Icons.add),
                   ),
                 ],
@@ -81,7 +72,6 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  // 🔹 ADD / REMOVE WASH
   void _showWashDialog(DateTime day) {
     showDialog(
       context: context,
@@ -94,18 +84,14 @@ class _MyHomePageState extends State<MyHomePage> {
               ListTile(
                 title: const Text("Water Wash"),
                 onTap: () {
-                  setState(() {
-                    box.put(_key(day), "water");
-                  });
+                  setState(() => box.put(_key(day), "water"));
                   Navigator.pop(context);
                 },
               ),
               ListTile(
                 title: const Text("Shampoo + Conditioner"),
                 onTap: () {
-                  setState(() {
-                    box.put(_key(day), "shampoo");
-                  });
+                  setState(() => box.put(_key(day), "shampoo"));
                   Navigator.pop(context);
                 },
               ),
@@ -113,9 +99,7 @@ class _MyHomePageState extends State<MyHomePage> {
               ListTile(
                 title: const Text("Remove Entry"),
                 onTap: () {
-                  setState(() {
-                    box.delete(_key(day));
-                  });
+                  setState(() => box.delete(_key(day)));
                   Navigator.pop(context);
                 },
               ),
@@ -126,7 +110,6 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  // 🔹 COLOR DAYS
   Color? _getDayColor(DateTime day) {
     final type = box.get(_key(day));
     if (type == "water") return const Color.fromARGB(255, 158, 163, 255);
@@ -134,9 +117,8 @@ class _MyHomePageState extends State<MyHomePage> {
     return null;
   }
 
-  // 🔹 MONTH COUNT (split by type)
-  Map<String, int> _monthlyCounts() {
-    final now = DateTime.now();
+  // 🔹 Now takes a `month` parameter instead of hardcoding DateTime.now()
+  Map<String, int> _monthlyCounts(DateTime month) {
     int water = 0;
     int shampoo = 0;
 
@@ -150,7 +132,7 @@ class _MyHomePageState extends State<MyHomePage> {
         int.parse(parts[2]),
       );
 
-      if (date.month == now.month && date.year == now.year) {
+      if (date.month == month.month && date.year == month.year) {
         final type = box.get(key);
         if (type == "water") water++;
         if (type == "shampoo") shampoo++;
@@ -160,7 +142,6 @@ class _MyHomePageState extends State<MyHomePage> {
     return {"water": water, "shampoo": shampoo};
   }
 
-  // 🔹 NEXT WASH LOGIC
   DateTime? _nextWashDay() {
     List<DateTime> shampooDays = [];
 
@@ -184,19 +165,25 @@ class _MyHomePageState extends State<MyHomePage> {
     final freq = _getFrequency();
     final computed = shampooDays.last.add(Duration(days: freq));
 
-    // If the computed next wash day has already passed, show today instead
     final today = DateTime.now();
     final todayNormalized = DateTime(today.year, today.month, today.day);
-    if (computed.isBefore(todayNormalized)) {
-      return todayNormalized;
-    }
+    if (computed.isBefore(todayNormalized)) return todayNormalized;
 
     return computed;
   }
 
+  String _monthName(DateTime d) {
+    const months = [
+      "January", "February", "March", "April", "May", "June",
+      "July", "August", "September", "October", "November", "December"
+    ];
+    return months[d.month - 1];
+  }
+
   @override
   Widget build(BuildContext context) {
-    final counts = _monthlyCounts();
+    // Pass _focusedDay so summary always reflects the visible calendar month
+    final counts = _monthlyCounts(_focusedDay);
     final next = _nextWashDay();
 
     return Scaffold(
@@ -204,10 +191,7 @@ class _MyHomePageState extends State<MyHomePage> {
         backgroundColor: lavender,
         title: const Text(
           "rapunzel",
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
         ),
         centerTitle: true,
       ),
@@ -223,7 +207,7 @@ class _MyHomePageState extends State<MyHomePage> {
           children: [
             const SizedBox(height: 10),
 
-            // 📊 MONTH SUMMARY
+            // 📊 MONTH SUMMARY — label updates to match the visible month
             Container(
               margin: const EdgeInsets.all(16),
               padding: const EdgeInsets.all(16),
@@ -234,9 +218,9 @@ class _MyHomePageState extends State<MyHomePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    "MONTH SUMMARY",
-                    style: TextStyle(
+                  Text(
+                    "${_monthName(_focusedDay).toUpperCase()} SUMMARY",
+                    style: const TextStyle(
                       fontSize: 12,
                       color: Colors.black54,
                       letterSpacing: 1,
@@ -244,7 +228,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    "${(counts['water']! + counts['shampoo']!)} Washes Total",
+                    "${counts['water']! + counts['shampoo']!} Washes Total",
                     style: const TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
@@ -253,7 +237,6 @@ class _MyHomePageState extends State<MyHomePage> {
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      // Water wash chip
                       Container(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 12, vertical: 6),
@@ -280,7 +263,6 @@ class _MyHomePageState extends State<MyHomePage> {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      // Shampoo wash chip
                       Container(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 12, vertical: 6),
@@ -325,10 +307,8 @@ class _MyHomePageState extends State<MyHomePage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      "NEXT WASH DAY",
-                      style: TextStyle(color: Colors.white70),
-                    ),
+                    const Text("NEXT WASH DAY",
+                        style: TextStyle(color: Colors.white70)),
                     const SizedBox(height: 6),
                     Text(
                       "Every ${_getFrequency()} days",
@@ -369,6 +349,12 @@ class _MyHomePageState extends State<MyHomePage> {
                   titleCentered: true,
                 ),
                 selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
+                // 🔹 This is the key: update _focusedDay when user swipes months
+                onPageChanged: (focusedDay) {
+                  setState(() {
+                    _focusedDay = focusedDay;
+                  });
+                },
                 onDaySelected: (selectedDay, focusedDay) {
                   setState(() {
                     _selectedDay = selectedDay;
@@ -382,51 +368,42 @@ class _MyHomePageState extends State<MyHomePage> {
                     return Container(
                       margin: const EdgeInsets.all(4),
                       decoration: BoxDecoration(
-                        color: color,
-                        shape: BoxShape.circle,
-                      ),
+                          color: color, shape: BoxShape.circle),
                       alignment: Alignment.center,
                       child: Text('${day.day}'),
                     );
                   },
                   todayBuilder: (context, day, focusedDay) {
-                    final loggedColor = _getDayColor(day);
-                    final color = loggedColor ?? const Color(0xFFFFCC80);
+                    final color =
+                        _getDayColor(day) ?? const Color.fromARGB(255, 205, 151, 246);
                     return Container(
                       margin: const EdgeInsets.all(4),
                       decoration: BoxDecoration(
-                        color: color,
-                        shape: BoxShape.circle,
-                      ),
+                          color: color, shape: BoxShape.circle),
                       alignment: Alignment.center,
-                      child: Text(
-                        '${day.day}',
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
+                      child: Text('${day.day}',
+                          style:
+                              const TextStyle(fontWeight: FontWeight.bold)),
                     );
                   },
                   selectedBuilder: (context, day, focusedDay) {
                     final isToday = isSameDay(day, DateTime.now());
-                    final loggedColor = _getDayColor(day);
-                    final color = loggedColor ??
+                    final color = _getDayColor(day) ??
                         (isToday
-                            ? const Color(0xFFFFCC80)
-                            : const Color(0xFFA5D6A7));
+                            ? const Color.fromARGB(255, 205, 151, 246)
+                            : const Color.fromARGB(255, 249, 164, 174));
                     return Container(
                       margin: const EdgeInsets.all(4),
                       decoration: BoxDecoration(
                         color: color,
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: Colors.green.shade300,
-                          width: 1.5,
-                        ),
+                            color: const Color.fromARGB(255, 249, 164, 174), width: 1.5),
                       ),
                       alignment: Alignment.center,
-                      child: Text(
-                        '${day.day}',
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
+                      child: Text('${day.day}',
+                          style:
+                              const TextStyle(fontWeight: FontWeight.bold)),
                     );
                   },
                 ),
